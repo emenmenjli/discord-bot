@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Bot Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">🤖 Bot Dashboard</a>
+      <div class="nav-links">
+        <span><strong><%= user.username %></strong></span>
+        <a href="/logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <h1>Your Servers</h1>
+    <p>Select a server to configure the bot.</p>
+
+    <% if (guilds.length === 0) { %>
+      <p style="color:#888;">No servers found. Make sure the bot is in your server and you have Manage Server permission.</p>
+      <a href="https://discord.com/oauth2/authorize?client_id=<%= user.id %>&scope=bot&permissions=8" class="btn btn-primary" target="_blank">Invite Bot</a>
+    <% } %>
+
+    <div class="guild-grid">
+      <% guilds.forEach(g => { %>
+        <a href="/dashboard/<%= g.id %>" class="guild-card">
+          <img src="<%= g.icon || 'https://cdn.discordapp.com/embed/avatars/0.png' %>" alt="<%= g.name %>">
+          <div class="guild-info">
+            <strong><%= g.name %></strong>
+            <span><%= g.memberCount %> members</span>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  </main>
+</body>
+</html>

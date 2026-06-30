@@ -1,0 +1,21 @@
+{
+  "name": "custom-discord-bot",
+  "version": "1.0.0",
+  "description": "Custom Discord bot with dashboard, custom commands, and role-based access",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "bot": "node bot.js",
+    "dashboard": "node dashboard.js"
+  },
+  "dependencies": {
+    "discord-api-types": "^0.38.49",
+    "discord.js": "^14.15.0",
+    "dotenv": "^16.4.0",
+    "ejs": "^3.1.10",
+    "express": "^4.19.0",
+    "express-session": "^1.18.0",
+    "passport": "^0.7.0",
+    "passport-discord": "^0.1.4"
+  }
+}

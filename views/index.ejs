@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bot Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">🤖 Bot Dashboard</a>
+      <div class="nav-links">
+        <% if (user) { %>
+          <span>Logged in as <strong><%= user.username %></strong></span>
+          <a href="/dashboard" class="btn btn-primary">Dashboard</a>
+          <a href="/logout">Logout</a>
+        <% } else { %>
+          <a href="/auth/discord" class="btn btn-discord">Login with Discord</a>
+        <% } %>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="hero">
+      <h1>Custom Discord Bot</h1>
+      <p>Manage your server with custom commands, moderation, leveling, and more — all from a web dashboard.</p>
+      <% if (!user) { %>
+        <a href="/auth/discord" class="btn btn-discord btn-lg">Get Started — Login with Discord</a>
+      <% } else { %>
+        <a href="/dashboard" class="btn btn-primary btn-lg">Go to Dashboard →</a>
+      <% } %>
+    </div>
+
+    <div class="features">
+      <div class="feature-card">
+        <h3>⚙️ Custom Commands</h3>
+        <p>Create commands that send messages or embeds. Restrict them to specific roles.</p>
+      </div>
+      <div class="feature-card">
+        <h3>🛡️ Moderation</h3>
+        <p>Kick, ban, mute, warn, and clear messages — all with detailed logs.</p>
+      </div>
+      <div class="feature-card">
+        <h3>📈 Leveling</h3>
+        <p>Members earn XP by chatting. Track ranks and compete on the leaderboard.</p>
+      </div>
+      <div class="feature-card">
+        <h3>👋 Welcome/Leave</h3>
+        <p>Automated welcome and leave messages with customizable text.</p>
+      </div>
+      <div class="feature-card">
+        <h3>🎭 Autoroles</h3>
+        <p>Assign roles automatically when new members join.</p>
+      </div>
+      <div class="feature-card">
+        <h3>🌐 Dashboard</h3>
+        <p>Everything configured easily from this web dashboard — no coding needed.</p>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

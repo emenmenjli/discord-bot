@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= guild.name %> — Bot Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="/" class="logo">🤖 Bot Dashboard</a>
+      <div class="nav-links">
+        <a href="/dashboard">Servers</a>
+        <span><strong><%= user.username %></strong></span>
+        <a href="/logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="guild-header">
+      <img src="<%= guild.iconURL({ size: 64 }) || 'https://cdn.discordapp.com/embed/avatars/0.png' %>" alt="<%= guild.name %>">
+      <h1><%= guild.name %></h1>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="commands">Custom Commands</button>
+      <button class="tab-btn" data-tab="settings">Server Settings</button>
+      <button class="tab-btn" data-tab="autoroles">Autoroles</button>
+      <button class="tab-btn" data-tab="leaderboard">Leaderboard</button>
+    </div>
+
+    <!-- COMMANDS TAB -->
+    <div class="tab-content active" id="tab-commands">
+      <h2>Create Command</h2>
+      <form method="POST" action="/api/guild/<%= guild.id %>/commands" class="form-card">
+        <div class="form-group">
+          <label>Command Name (without prefix)</label>
+          <input type="text" name="name" placeholder="hello" required>
+        </div>
+        <div class="form-group">
+          <label>Response Message</label>
+          <textarea name="response" placeholder="Hello {user}! Welcome to {server}." rows="3"></textarea>
+          <small>Use: {user} {user.name} {server} {channel} {args}</small>
+        </div>
+        <div class="form-group">
+          <label>Allowed Roles (hold Ctrl to select multiple)</label>
+          <select name="allowed_roles" multiple>
+            <% roles.forEach(r => { %>
+              <option value="<%= r.id %>"><%= r.name %></option>
+            <% }) %>
+          </select>
+          <small>Leave empty to allow everyone.</small>
+        </div>
+        <div class="form-group">
+          <label>Embed JSON (optional — overrides response)</label>
+          <textarea name="embed" placeholder='{"title":"Hello","description":"World","color":5793266}' rows="3"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Create Command</button>
+      </form>
+
+      <h2>Existing Commands</h2>
+      <% if (commands.length === 0) { %>
+        <p>No custom commands yet. Create one above!</p>
+      <% } %>
+      <div class="command-list">
+        <% commands.forEach(c => { %>
+          <div class="command-card">
+            <div class="cmd-header">
+              <strong>!<%= c.name %></strong>
+              <span class="cmd-usage">Used <%= c.usage_count %> times</span>
+            </div>
+            <div class="cmd-body">
+              <% if (c.allowed_roles && JSON.parse(c.allowed_roles).length > 0) { %>
+                <div class="cmd-roles">
+                  Roles: <% JSON.parse(c.allowed_roles).forEach(rid => { %>
+                    <span class="role-badge"><%= (roles.find(r => r.id === rid) || {}).name || rid %></span>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <span class="cmd-public">🔓 Everyone can use</span>
+              <% } %>
+              <pre><%= c.response || '[Embed]' %></pre>
+            </div>
+            <form method="POST" action="/api/guild/<%= guild.id %>/commands/<%= c.name %>/delete" style="display:inline">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div class="tab-content" id="tab-settings">
+      <h2>Server Settings</h2>
+      <form method="POST" action="/api/guild/<%= guild.id %>/settings" class="form-card">
+        <div class="form-group">
+          <label>Command Prefix</label>
+          <input type="text" name="prefix" value="<%= settings.prefix || '!' %>" maxlength="3">
+        </div>
+        <div class="form-group">
+          <label>Welcome Channel</label>
+          <select name="welcome_channel">
+            <option value="">— Disabled —</option>
+            <% channels.forEach(c => { %>
+              <option value="<%= c.id %>" <%= settings.welcome_channel === c.id ? 'selected' : '' %>><%= c.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Welcome Message</label>
+          <textarea name="welcome_message" rows="3"><%= settings.welcome_message || '' %></textarea>
+          <small>Use: {user} {user.name} {server} {count}</small>
+        </div>
+        <div class="form-group">
+          <label>Leave Channel</label>
+          <select name="leave_channel">
+            <option value="">— Disabled —</option>
+            <% channels.forEach(c => { %>
+              <option value="<%= c.id %>" <%= settings.leave_channel === c.id ? 'selected' : '' %>><%= c.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Leave Message</label>
+          <textarea name="leave_message" rows="3"><%= settings.leave_message || '' %></textarea>
+          <small>Use: {user} {user.name} {server} {count}</small>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+      </form>
+    </div>
+
+    <!-- AUTOROLES TAB -->
+    <div class="tab-content" id="tab-autoroles">
+      <h2>Autoroles (assigned on join)</h2>
+      <form method="POST" action="/api/guild/<%= guild.id %>/autoroles" class="form-card" style="max-width:400px;">
+        <div class="form-group">
+          <label>Role to assign</label>
+          <select name="role_id" required>
+            <option value="">— Select —</option>
+            <% roles.forEach(r => { %>
+              <option value="<%= r.id %>"><%= r.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Autorole</button>
+      </form>
+
+      <% if (autoroles.length === 0) { %>
+        <p>No autoroles configured.</p>
+      <% } %>
+      <div class="command-list">
+        <% autoroles.forEach(ar => { %>
+          <div class="command-card">
+            <span><strong><%= (roles.find(r => r.id === ar.role_id) || {}).name || ar.role_id %></strong></span>
+            <form method="POST" action="/api/guild/<%= guild.id %>/autoroles/<%= ar.role_id %>/delete" style="display:inline">
+              <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+            </form>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD TAB -->
+    <div class="tab-content" id="tab-leaderboard">
+      <h2>🏆 Leveling Leaderboard</h2>
+      <% if (leaderboard.length === 0) { %>
+        <p>No data yet. Members earn XP by sending messages.</p>
+      <% } %>
+      <table class="leaderboard-table">
+        <thead>
+          <tr><th>#</th><th>User</th><th>Level</th><th>XP</th></tr>
+        </thead>
+        <tbody>
+          <% leaderboard.forEach((entry, i) => { %>
+            <tr>
+              <td><strong><%= i + 1 %></strong></td>
+              <td><%= guild.members.cache.get(entry.user_id)?.user.tag || entry.user_id %></td>
+              <td><%= entry.level %></td>
+              <td><%= entry.xp %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
