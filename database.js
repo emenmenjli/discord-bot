@@ -180,6 +180,21 @@ function getCases(guildId, userId = null) {
   return cases.reverse();
 }
 
+function getCasesByType(guildId, userId, type) {
+  const data = load();
+  return data.cases.filter((c) => c.guild_id === guildId && c.user_id === userId && c.type === type).reverse();
+}
+
+function clearCases(guildId, userId, type = null) {
+  const data = load();
+  if (type) {
+    data.cases = data.cases.filter((c) => !(c.guild_id === guildId && c.user_id === userId && c.type === type));
+  } else {
+    data.cases = data.cases.filter((c) => !(c.guild_id === guildId && c.user_id === userId));
+  }
+  save(data);
+}
+
 module.exports = {
   upsertGuild,
   getGuild,
@@ -197,4 +212,6 @@ module.exports = {
   getLeaderboard,
   addCase,
   getCases,
+  getCasesByType,
+  clearCases,
 };

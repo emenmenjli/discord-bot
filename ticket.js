@@ -1,4 +1,4 @@
-const { EmbedBuilder, PermissionsBitField, ChannelType } = require('discord.js');
+const { EmbedBuilder, PermissionsBitField, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getGuild } = require('./database');
 
 module.exports = {
@@ -7,7 +7,7 @@ module.exports = {
   async execute(message, args) {
     const guild = getGuild(message.guild.id);
     if (!guild || !guild.ticket_category) {
-      return message.reply('❌ Tickets are not configured. Ask an admin to set a ticket category in the dashboard.');
+      return message.reply('❌ Tickets are not configured. Ask an admin to set a ticket category in the dashboard or use `sticketsetup`.');
     }
 
     const category = message.guild.channels.cache.get(guild.ticket_category);
@@ -49,13 +49,26 @@ module.exports = {
       permissionOverwrites: perms,
     });
 
+    const closeRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('close_ticket')
+        .setLabel('Close Ticket')
+        .setStyle(ButtonStyle.Danger)
+        .setEmoji('🔒'),
+      new ButtonBuilder()
+        .setCustomId('claim_ticket')
+        .setLabel('Claim')
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji('✋')
+    );
+
     const embed = new EmbedBuilder()
       .setColor(0x5865F2)
       .setTitle('🎫 New Ticket')
       .setDescription(`Ticket created by ${message.author}\n**Reason:** ${topic}\n\nStaff will be with you shortly.`)
       .setTimestamp();
 
-    await channel.send({ embeds: [embed] });
+    await channel.send({ content: `${staffRoles.map((r) => `<@&${r}>`).join(' ')}`, embeds: [embed], components: [closeRow] });
     await message.reply(`✅ Ticket created: ${channel}`);
   },
 };

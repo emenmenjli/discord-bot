@@ -22,6 +22,8 @@ module.exports = {
             `\`${p}mute <user> <duration> [reason]\` - Mute a member`,
             `\`${p}unmute <user>\` - Unmute a member`,
             `\`${p}warn <user> [reason]\` - Warn a member`,
+            `\`${p}warns <user>\` - View warns for a user`,
+            `\`${p}clearwarns <user>\` - Clear all warns for a user`,
             `\`${p}clear <amount>\` - Clear messages`,
             `\`${p}modlogs [user]\` - View moderation logs`,
           ].join('\n'),
@@ -43,6 +45,7 @@ module.exports = {
           value: [
             `\`${p}ticket [reason]\` - Create a support ticket`,
             `\`${p}close\` - Close your ticket`,
+            `\`${p}ticketsetup\` - Post a ticket panel with buttons (admin)`,
           ].join('\n'),
           inline: false,
         },

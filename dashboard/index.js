@@ -5,7 +5,7 @@ const DiscordStrategy = require('passport-discord').Strategy;
 const path = require('path');
 const config = require('../config');
 const {
-  getGuild, updateGuild, getCommands, addCommand, removeCommand,
+  getGuild, updateGuild, getCommands, addCommand, removeCommand, getCommand,
   getAutoroles, addAutorole, removeAutorole, getLeaderboard,
 } = require('../database');
 
@@ -14,8 +14,6 @@ const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
 
 app.use(session({
   secret: config.sessionSecret,
@@ -40,67 +38,63 @@ passport.use(new DiscordStrategy({
 
 function isAuth(req, res, next) {
   if (req.isAuthenticated()) return next();
-  res.redirect('/login');
+  res.status(401).json({ error: 'Unauthorized' });
 }
 
 function getClient() {
-  try {
-    return require('../bot');
-  } catch {
-    return null;
-  }
+  try { return require('../bot'); } catch { return null; }
 }
 
-// Auth routes
+// Auth
 app.get('/login', (req, res) => {
-  res.render('login', { user: req.user });
+  res.redirect('/auth/discord');
 });
 
 app.get('/auth/discord', passport.authenticate('discord'));
 
 app.get('/auth/callback',
-  passport.authenticate('discord', { failureRedirect: '/login' }),
-  (req, res) => {
-    res.redirect('/dashboard');
-  }
+  passport.authenticate('discord', { failureRedirect: '/' }),
+  (req, res) => { res.redirect('/dashboard'); }
 );
 
-app.get('/logout', (req, res) => {
-  req.logout(() => res.redirect('/'));
+app.get('/logout', (req, res, next) => {
+  req.logout((err) => { if (err) return next(err); res.redirect('/'); });
 });
 
-// Pages
-app.get('/', (req, res) => {
-  res.render('index', { user: req.user, bot: getClient()?.user || null });
+// API: get user info (public — returns null when not authenticated)
+app.get('/api/user', (req, res) => {
+  if (!req.isAuthenticated()) return res.json(null);
+  res.json({ id: req.user.id, username: req.user.username, avatar: req.user.avatar });
 });
 
-app.get('/dashboard', isAuth, async (req, res) => {
+// API: get user's manageable guilds
+app.get('/api/guilds', isAuth, (req, res) => {
   const client = getClient();
   const guilds = [];
   if (client) {
-    for (const [id, guild] of client.guilds.cache) {
+    for (const [, guild] of client.guilds.cache) {
       const member = guild.members.cache.get(req.user.id);
       if (member && (member.permissions.has('ManageGuild') || member.permissions.has('Administrator'))) {
         guilds.push({
-          id: guild.id,
-          name: guild.name,
+          id: guild.id, name: guild.name,
           icon: guild.iconURL({ size: 64 }),
           memberCount: guild.memberCount,
         });
       }
     }
   }
-  res.render('dashboard', { user: req.user, guilds });
+  res.json(guilds);
 });
 
-app.get('/dashboard/:guildId', isAuth, async (req, res) => {
+// API: get guild settings
+app.get('/api/guild/:guildId', isAuth, (req, res) => {
   const client = getClient();
   const guild = client?.guilds.cache.get(req.params.guildId);
-  if (!guild) return res.status(404).send('Guild not found or bot not in guild.');
+  if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
   const member = guild.members.cache.get(req.user.id);
   if (!member || !(member.permissions.has('ManageGuild') || member.permissions.has('Administrator'))) {
-    return res.status(403).send('You do not have permission to manage this server.');
+    return res.status(403).json({ error: 'Forbidden' });
   }
 
   const settings = getGuild(guild.id) || {};
@@ -121,64 +115,56 @@ app.get('/dashboard/:guildId', isAuth, async (req, res) => {
     .filter((c) => c.type === 4)
     .map((c) => ({ id: c.id, name: c.name }));
 
-  res.render('settings', {
-    user: req.user,
-    guild,
-    settings,
-    commands,
-    autoroles,
-    leaderboard,
-    roles,
-    channels,
-    categories,
+  res.json({
+    guild: {
+      id: guild.id, name: guild.name,
+      icon: guild.iconURL({ size: 128 }),
+      memberCount: guild.memberCount,
+    },
+    settings, commands, autoroles, leaderboard, roles, channels, categories,
   });
 });
 
-// API Endpoints
-app.post('/api/guild/:guildId/settings', isAuth, (req, res) => {
+// API: update settings
+app.patch('/api/guild/:guildId/settings', isAuth, (req, res) => {
   const body = { ...req.body };
-  if (body.ticket_staff_roles && Array.isArray(body.ticket_staff_roles)) {
-    body.ticket_staff_roles = JSON.stringify(body.ticket_staff_roles);
-  }
-  if (body.ticket_staff_roles && !Array.isArray(body.ticket_staff_roles) && typeof body.ticket_staff_roles === 'string') {
-    body.ticket_staff_roles = JSON.stringify([body.ticket_staff_roles]);
+  if (body.ticket_staff_roles && typeof body.ticket_staff_roles === 'string') {
+    try { body.ticket_staff_roles = JSON.stringify(JSON.parse(body.ticket_staff_roles)); }
+    catch { body.ticket_staff_roles = JSON.stringify([body.ticket_staff_roles]); }
   }
   updateGuild(req.params.guildId, body);
-  res.redirect(`/dashboard/${req.params.guildId}`);
+  res.json({ success: true });
 });
 
+// API: manage commands
 app.post('/api/guild/:guildId/commands', isAuth, (req, res) => {
   const { name, response, embed, allowed_roles } = req.body;
-  const embedData = embed ? JSON.parse(embed) : null;
-  const roles = allowed_roles ? (Array.isArray(allowed_roles) ? allowed_roles : [allowed_roles]) : [];
-  addCommand(req.params.guildId, name, response, embedData, roles);
-  res.redirect(`/dashboard/${req.params.guildId}`);
+  addCommand(req.params.guildId, name, response, embed || null, allowed_roles || []);
+  res.json({ success: true });
 });
 
-app.post('/api/guild/:guildId/commands/:commandId/delete', isAuth, (req, res) => {
-  const { getCommand } = require('../database');
-  const cmd = getCommand(req.params.guildId, req.params.commandId);
-  if (cmd) {
-    removeCommand(req.params.guildId, cmd.name);
-  }
-  res.redirect(`/dashboard/${req.params.guildId}`);
+app.delete('/api/guild/:guildId/commands/:name', isAuth, (req, res) => {
+  removeCommand(req.params.guildId, req.params.name);
+  res.json({ success: true });
 });
 
+// API: manage autoroles
 app.post('/api/guild/:guildId/autoroles', isAuth, (req, res) => {
-  const { role_id } = req.body;
-  if (role_id) {
-    addAutorole(req.params.guildId, role_id);
-  }
-  res.redirect(`/dashboard/${req.params.guildId}`);
+  addAutorole(req.params.guildId, req.body.role_id);
+  res.json({ success: true });
 });
 
-app.post('/api/guild/:guildId/autoroles/:roleId/delete', isAuth, (req, res) => {
+app.delete('/api/guild/:guildId/autoroles/:roleId', isAuth, (req, res) => {
   removeAutorole(req.params.guildId, req.params.roleId);
-  res.redirect(`/dashboard/${req.params.guildId}`);
+  res.json({ success: true });
+});
+
+// Serve the SPA - all unmatched routes go to index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log(`🌐 Dashboard running at http://localhost:${PORT}`);
 });

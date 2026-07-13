@@ -17,6 +17,7 @@ client.commands = new Collection();
 const events = [
   require('./ready'),
   require('./messageCreate'),
+  require('./interactionCreate'),
   require('./guildCreate'),
   require('./guildMemberAdd'),
   require('./guildMemberRemove'),
