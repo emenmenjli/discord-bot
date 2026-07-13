@@ -39,6 +39,14 @@ module.exports = {
           inline: false,
         },
         {
+          name: '🎫 Tickets',
+          value: [
+            `\`${p}ticket [reason]\` - Create a support ticket`,
+            `\`${p}close\` - Close your ticket`,
+          ].join('\n'),
+          inline: false,
+        },
+        {
           name: '📈 Leveling',
           value: [
             `\`${p}rank [user]\` - Check XP/level`,

@@ -117,6 +117,10 @@ app.get('/dashboard/:guildId', isAuth, async (req, res) => {
     .filter((c) => c.type === 0)
     .map((c) => ({ id: c.id, name: c.name }));
 
+  const categories = guild.channels.cache
+    .filter((c) => c.type === 4)
+    .map((c) => ({ id: c.id, name: c.name }));
+
   res.render('settings', {
     user: req.user,
     guild,
@@ -126,12 +130,20 @@ app.get('/dashboard/:guildId', isAuth, async (req, res) => {
     leaderboard,
     roles,
     channels,
+    categories,
   });
 });
 
 // API Endpoints
 app.post('/api/guild/:guildId/settings', isAuth, (req, res) => {
-  updateGuild(req.params.guildId, req.body);
+  const body = { ...req.body };
+  if (body.ticket_staff_roles && Array.isArray(body.ticket_staff_roles)) {
+    body.ticket_staff_roles = JSON.stringify(body.ticket_staff_roles);
+  }
+  if (body.ticket_staff_roles && !Array.isArray(body.ticket_staff_roles) && typeof body.ticket_staff_roles === 'string') {
+    body.ticket_staff_roles = JSON.stringify([body.ticket_staff_roles]);
+  }
+  updateGuild(req.params.guildId, body);
   res.redirect(`/dashboard/${req.params.guildId}`);
 });
 

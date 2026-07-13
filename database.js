@@ -34,6 +34,9 @@ function upsertGuild(guildId) {
       leave_channel: null,
       leave_message: null,
       mod_log_channel: null,
+      leveling_enabled: false,
+      ticket_category: null,
+      ticket_staff_roles: '[]',
     };
     save(data);
   }
@@ -47,7 +50,7 @@ function getGuild(guildId) {
 function updateGuild(guildId, updates) {
   const data = load();
   if (!data.guilds[guildId]) data.guilds[guildId] = { id: guildId };
-  const allowed = ['prefix', 'welcome_channel', 'welcome_message', 'leave_channel', 'leave_message', 'mod_log_channel'];
+  const allowed = ['prefix', 'welcome_channel', 'welcome_message', 'leave_channel', 'leave_message', 'mod_log_channel', 'leveling_enabled', 'ticket_category', 'ticket_staff_roles'];
   for (const [key, val] of Object.entries(updates)) {
     if (allowed.includes(key)) {
       data.guilds[guildId][key] = val;

@@ -28,6 +28,8 @@
       <button class="tab-btn active" data-tab="commands">Custom Commands</button>
       <button class="tab-btn" data-tab="settings">Server Settings</button>
       <button class="tab-btn" data-tab="autoroles">Autoroles</button>
+      <button class="tab-btn" data-tab="leveling">Leveling</button>
+      <button class="tab-btn" data-tab="tickets">Tickets</button>
       <button class="tab-btn" data-tab="leaderboard">Leaderboard</button>
     </div>
 
@@ -162,11 +164,54 @@
       </div>
     </div>
 
+    <!-- LEVELING TAB -->
+    <div class="tab-content" id="tab-leveling">
+      <h2>📈 Leveling Settings</h2>
+      <form method="POST" action="/api/guild/<%= guild.id %>/settings" class="form-card" style="max-width:400px;">
+        <div class="form-group">
+          <label>Enable Leveling System</label>
+          <select name="leveling_enabled">
+            <option value="true" <%= settings.leveling_enabled === 'true' ? 'selected' : '' %>>Enabled</option>
+            <option value="false" <%= settings.leveling_enabled !== 'true' ? 'selected' : '' %>>Disabled</option>
+          </select>
+          <small>When disabled, no XP will be earned from messages.</small>
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </form>
+    </div>
+
+    <!-- TICKETS TAB -->
+    <div class="tab-content" id="tab-tickets">
+      <h2>🎫 Ticket Settings</h2>
+      <form method="POST" action="/api/guild/<%= guild.id %>/settings" class="form-card" style="max-width:500px;">
+        <div class="form-group">
+          <label>Ticket Category</label>
+          <select name="ticket_category">
+            <option value="">— Disabled —</option>
+            <% categories.forEach(c => { %>
+              <option value="<%= c.id %>" <%= settings.ticket_category === c.id ? 'selected' : '' %>><%= c.name %></option>
+            <% }) %>
+          </select>
+          <small>New ticket channels will be created under this category.</small>
+        </div>
+        <div class="form-group">
+          <label>Staff Roles (hold Ctrl to select multiple)</label>
+          <select name="ticket_staff_roles" multiple>
+            <% roles.forEach(r => { %>
+              <option value="<%= r.id %>" <%= (JSON.parse(settings.ticket_staff_roles || '[]') || []).includes(r.id) ? 'selected' : '' %>><%= r.name %></option>
+            <% }) %>
+          </select>
+          <small>These roles can see and manage all tickets.</small>
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </form>
+    </div>
+
     <!-- LEADERBOARD TAB -->
     <div class="tab-content" id="tab-leaderboard">
-      <h2>🏆 Leveling Leaderboard</h2>
+      <h2>🏆 Leaderboard</h2>
       <% if (leaderboard.length === 0) { %>
-        <p>No data yet. Members earn XP by sending messages.</p>
+        <p>No data yet. Enable leveling in the Leveling tab and members will earn XP by sending messages.</p>
       <% } %>
       <table class="leaderboard-table">
         <thead>

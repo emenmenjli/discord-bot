@@ -8,9 +8,10 @@ module.exports = {
     if (message.author.bot || !message.guild) return;
 
     upsertGuild(message.guild.id);
-    addXp(message.author.id, message.guild.id, 5);
-
     const guild = getGuild(message.guild.id);
+    if (guild && guild.leveling_enabled === 'true') {
+      addXp(message.author.id, message.guild.id, 5);
+    }
     const prefix = (guild && guild.prefix) || config.prefix;
 
     if (!message.content.startsWith(prefix)) return;
