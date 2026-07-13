@@ -41,6 +41,19 @@ module.exports = {
           inline: false,
         },
         {
+          name: '🎨 Role Management',
+          value: [
+            `\`${p}role give @user @role\` - Give a role`,
+            `\`${p}role remove @user @role\` - Remove a role`,
+            `\`${p}role create <name> [color]\` - Create a role`,
+            `\`${p}role delete @role\` - Delete a role`,
+            `\`${p}role rename @role <name>\` - Rename a role`,
+            `\`${p}role color @role <color>\` - Change role color`,
+            `\`${p}role list\` - List all roles`,
+          ].join('\n'),
+          inline: false,
+        },
+        {
           name: '🎫 Tickets',
           value: [
             `\`${p}ticket [reason]\` - Create a support ticket`,
