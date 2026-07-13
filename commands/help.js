@@ -39,13 +39,6 @@ module.exports = {
           inline: false,
         },
         {
-          name: '🤖 AI',
-          value: [
-            `\`${p}ask <question>\` - Ask the AI anything`,
-          ].join('\n'),
-          inline: false,
-        },
-        {
           name: '📈 Leveling',
           value: [
             `\`${p}rank [user]\` - Check XP/level`,
