@@ -7,4 +7,5 @@ module.exports = {
   sessionSecret: process.env.SESSION_SECRET || 'default_secret_change_me',
   dashboardUrl: process.env.DASHBOARD_URL || 'http://localhost:3000',
   prefix: process.env.PREFIX || 's',
+  openaiKey: process.env.OPENAI_API_KEY,
 };
