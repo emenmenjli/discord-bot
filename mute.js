@@ -1,5 +1,5 @@
 const { EmbedBuilder, PermissionsBitField } = require('discord.js');
-const { addCase } = require('./database');
+const { addCase, getCasesByType, clearCases } = require('./database');
 
 module.exports = {
   name: 'mute',
@@ -32,6 +32,8 @@ module.exports = {
     await member.timeout(ms, reason);
     const caseId = addCase(message.guild.id, user.id, message.author.id, 'mute', reason, durationStr);
 
+    const muteCount = getCasesByType(message.guild.id, user.id, 'mute').length;
+
     const embed = new EmbedBuilder()
       .setColor(0x808080)
       .setTitle('🔇 Member Muted')
@@ -40,9 +42,20 @@ module.exports = {
         { name: 'Moderator', value: message.author.tag, inline: true },
         { name: 'Duration', value: durationStr, inline: true },
         { name: 'Reason', value: reason },
-        { name: 'Case', value: `#${caseId}`, inline: true }
+        { name: 'Case', value: `#${caseId}`, inline: true },
+        { name: 'Total Mutes', value: `${muteCount}`, inline: true }
       )
       .setTimestamp();
+
+    if (muteCount >= 3) {
+      if (member.kickable) {
+        await member.kick('Auto-punishment: Reached 3 mutes');
+        clearCases(message.guild.id, user.id, 'mute');
+        embed.addFields({ name: '👢 Auto-Escalation', value: `User reached **3 mutes** and has been **kicked**. Mute cases cleared.` });
+      } else {
+        embed.addFields({ name: '👢 Auto-Escalation', value: `User reached **3 mutes** but could not be kicked (hierarchy issue).` });
+      }
+    }
 
     message.channel.send({ embeds: [embed] });
   },
