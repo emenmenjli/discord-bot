@@ -1,5 +1,5 @@
 const { EmbedBuilder, PermissionsBitField } = require('discord.js');
-const { addCase } = require('../data/database');
+const { addCase } = require('./database');
 
 module.exports = {
   name: 'mute',

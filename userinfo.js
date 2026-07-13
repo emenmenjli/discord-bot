@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const { getLevel } = require('../data/database');
+const { getLevel } = require('./database');
 
 module.exports = {
   name: 'userinfo',

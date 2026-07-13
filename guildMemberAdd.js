@@ -1,4 +1,4 @@
-const { getAutoroles, getGuild } = require('../data/database');
+const { getAutoroles, getGuild } = require('./database');
 
 module.exports = {
   name: 'guildMemberAdd',

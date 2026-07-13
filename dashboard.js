@@ -7,15 +7,15 @@ const config = require('./config');
 const {
   getGuild, updateGuild, getCommands, addCommand, removeCommand,
   getAutoroles, addAutorole, removeAutorole, getLeaderboard,
-} = require('./data/database');
+} = require('./database');
 
 const app = express();
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', __dirname);
 
 app.use(session({
   secret: config.sessionSecret,
@@ -144,7 +144,7 @@ app.post('/api/guild/:guildId/commands', isAuth, (req, res) => {
 });
 
 app.post('/api/guild/:guildId/commands/:commandId/delete', isAuth, (req, res) => {
-  const { getCommand } = require('./data/database');
+  const { getCommand } = require('./database');
   const cmd = getCommand(req.params.guildId, req.params.commandId);
   if (cmd) {
     removeCommand(req.params.guildId, cmd.name);

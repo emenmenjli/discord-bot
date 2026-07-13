@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const { getCommands, getGuild } = require('../data/database');
+const { getCommands, getGuild } = require('./database');
 
 module.exports = {
   name: 'help',

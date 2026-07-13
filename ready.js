@@ -11,7 +11,7 @@ module.exports = {
     });
 
     for (const [, guild] of client.guilds.cache) {
-      const { upsertGuild, getGuild, updateGuild } = require('../data/database');
+      const { upsertGuild, getGuild, updateGuild } = require('./database');
       upsertGuild(guild.id);
       const settings = getGuild(guild.id);
       if (settings && settings.prefix === '!') {

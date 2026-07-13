@@ -1,7 +1,7 @@
 module.exports = {
   name: 'guildCreate',
   execute(guild) {
-    const { upsertGuild } = require('../data/database');
+    const { upsertGuild } = require('./database');
     upsertGuild(guild.id);
     console.log(`📥 Joined guild: ${guild.name} (${guild.id})`);
   },

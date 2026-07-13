@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const { getLeaderboard } = require('../data/database');
+const { getLeaderboard } = require('./database');
 
 module.exports = {
   name: 'leaderboard',

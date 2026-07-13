@@ -1,4 +1,4 @@
-const { getGuild } = require('../data/database');
+const { getGuild } = require('./database');
 
 module.exports = {
   name: 'guildMemberRemove',

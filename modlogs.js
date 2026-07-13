@@ -1,5 +1,5 @@
 const { EmbedBuilder, PermissionsBitField } = require('discord.js');
-const { getCases } = require('../data/database');
+const { getCases } = require('./database');
 
 module.exports = {
   name: 'modlogs',

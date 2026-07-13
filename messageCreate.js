@@ -1,5 +1,5 @@
-const config = require('../config');
-const { getCommand, incrementCommandUsage, addXp, getGuild, upsertGuild } = require('../data/database');
+const config = require('./config');
+const { getCommand, incrementCommandUsage, addXp, getGuild, upsertGuild } = require('./database');
 
 module.exports = {
   name: 'messageCreate',
@@ -70,7 +70,7 @@ module.exports = {
 
 function loadBuiltinCommand(name) {
   try {
-    return require(`../commands/${name}`);
+    return require(`./${name}`);
   } catch {
     return null;
   }
