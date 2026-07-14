@@ -59,7 +59,7 @@ async function renderHome(app) {
         <div class="feature-card"><div class="icon">⚙️</div><h3>Custom Commands</h3><p>Create your own commands with dynamic placeholders. Restrict them to specific roles or let everyone use them. Supports text responses and rich embeds.</p><div class="example">${user ? '' : 's}hello → Hello @user! Welcome to My Server.'}</div></div>
         <div class="feature-card"><div class="icon">🛡️</div><h3>Moderation</h3><p>Kick, ban, mute, warn, and purge messages — all with automatic case logging. Keep your server safe with powerful moderation tools.</p></div>
         <div class="feature-card"><div class="icon">📈</div><h3>Leveling</h3><p>Members earn XP by chatting in text channels. Track progress with levels and a leaderboard. Enable or disable anytime from the dashboard.</p></div>
-        <div class="feature-card"><div class="icon">🎫</div><h3>Tickets</h3><p>Let users open support tickets with <code>sticket</code>. Staff gets a private channel to help. Close tickets with <code>sclose</code>. Assign staff roles from the dashboard.</p></div>
+        <div class="feature-card"><div class="icon">🎫</div><h3>Tickets</h3><p>Let users open tickets via <code>sticket</code> or click a button on the ticket panel. Staff gets a private channel with close and claim buttons. Assign staff roles from the dashboard.</p></div>
         <div class="feature-card"><div class="icon">👋</div><h3>Welcome & Leave</h3><p>Greet new members and say goodbye when they leave. Fully customizable messages with placeholders for user name, server name, and member count.</p></div>
         <div class="feature-card"><div class="icon">🎯</div><h3>Autoroles</h3><p>Automatically assign roles when someone joins your server. Set up multiple autoroles from the dashboard — perfect for verification or self-roles.</p></div>
       </div>
@@ -82,11 +82,21 @@ async function renderHome(app) {
             <tr><td><code>sban</code></td><td>Ban a member from the server</td><td><code>sban @user reason</code></td></tr>
             <tr><td><code>smute</code></td><td>Mute a member (text only)</td><td><code>smute @user reason</code></td></tr>
             <tr><td><code>sunmute</code></td><td>Unmute a member</td><td><code>sunmute @user</code></td></tr>
-            <tr><td><code>swarn</code></td><td>Warn a member (logged)</td><td><code>swarn @user reason</code></td></tr>
-            <tr><td><code>sclear</code></td><td>Bulk delete messages</td><td><code>sclear 10</code></td></tr>
-            <tr><td><code>sticket</code></td><td>Create a support ticket</td><td><code>sticket Need help with roles</code></td></tr>
-            <tr><td><code>sclose</code></td><td>Close your open ticket</td><td><code>sclose</code></td></tr>
-            <tr><td><code>s[command]</code></td><td>Run any custom command created in the dashboard</td><td><code>shello</code></td></tr>
+             <tr><td><code>swarn</code></td><td>Warn a member (logged)</td><td><code>swarn @user reason</code></td></tr>
+             <tr><td><code>swarns</code></td><td>View all warns for a user</td><td><code>swarns @user</code></td></tr>
+             <tr><td><code>sclearwarns</code></td><td>Clear all warns for a user (admin)</td><td><code>sclearwarns @user</code></td></tr>
+             <tr><td><code>sclear</code></td><td>Bulk delete messages</td><td><code>sclear 10</code></td></tr>
+             <tr><td><code>sticket</code></td><td>Create a support ticket</td><td><code>sticket Need help with roles</code></td></tr>
+             <tr><td><code>sclose</code></td><td>Close your open ticket</td><td><code>sclose</code></td></tr>
+             <tr><td><code>sticketsetup</code></td><td>Post a ticket panel with buttons (admin)</td><td><code>sticketsetup</code></td></tr>
+             <tr><td><code>srole give</code></td><td>Give a role to a user</td><td><code>srole give @user @role</code></td></tr>
+             <tr><td><code>srole remove</code></td><td>Remove a role from a user</td><td><code>srole remove @user @role</code></td></tr>
+             <tr><td><code>srole create</code></td><td>Create a new role</td><td><code>srole create Members #FF0000</code></td></tr>
+             <tr><td><code>srole delete</code></td><td>Delete a role</td><td><code>srole delete @role</code></td></tr>
+             <tr><td><code>srole rename</code></td><td>Rename a role</td><td><code>srole rename @role New Name</code></td></tr>
+             <tr><td><code>srole color</code></td><td>Change a role's color</td><td><code>srole color @role #00FF00</code></td></tr>
+             <tr><td><code>srole list</code></td><td>List all server roles</td><td><code>srole list</code></td></tr>
+             <tr><td><code>s[command]</code></td><td>Run any custom command created in the dashboard</td><td><code>shello</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -184,182 +194,322 @@ async function renderGuildSettings(app, params) {
   const { guild, settings, commands, autoroles, leaderboard, roles, channels, categories } = data;
   const p = settings.prefix || 's';
 
+  const sidebarItems = [
+    { id: 'overview', label: 'Overview', icon: '📊' },
+    { id: 'commands', label: 'Commands', icon: '⚙️' },
+    { id: 'settings', label: 'Settings', icon: '🔧' },
+    { id: 'leveling', label: 'Leveling', icon: '📈' },
+    { id: 'tickets', label: 'Tickets', icon: '🎫' },
+    { id: 'autoroles', label: 'Autoroles', icon: '🎯' },
+    { id: 'roles', label: 'Roles', icon: '🎨' },
+    { id: 'moderation', label: 'Moderation', icon: '🛡️' },
+    { id: 'leaderboard', label: 'Leaderboard', icon: '🏆' },
+  ];
+
   app.innerHTML = nav(user) + `
-    <div class="container">
-      <div class="page-header">
-        <img src="${guild.icon || 'https://cdn.discordapp.com/embed/avatars/0.png'}" alt="">
-        <div>
-          <h1>${guild.name}</h1>
-          <span style="color:var(--text2);font-size:0.85rem;">${guild.memberCount} members</span>
+    <div class="dash-layout">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <img src="${guild.icon || 'https://cdn.discordapp.com/embed/avatars/0.png'}" alt="">
+          <div>
+            <strong>${guild.name}</strong>
+            <span>${guild.memberCount} members</span>
+          </div>
         </div>
-      </div>
-
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="commands">Custom Commands</button>
-        <button class="tab-btn" data-tab="settings">Settings</button>
-        <button class="tab-btn" data-tab="leveling">Leveling</button>
-        <button class="tab-btn" data-tab="tickets">Tickets</button>
-        <button class="tab-btn" data-tab="autoroles">Autoroles</button>
-        <button class="tab-btn" data-tab="leaderboard">Leaderboard</button>
-      </div>
-
-      <!-- Commands -->
-      <div class="tab-content active" id="tab-commands">
-        <div class="card" style="max-width:600px;">
-          <h3>Create Command</h3>
-          <div class="form-group">
-            <label>Command Name (without prefix)</label>
-            <input id="cmd-name" placeholder="hello">
-          </div>
-          <div class="form-group">
-            <label>Response Message</label>
-            <textarea id="cmd-response" placeholder="Hello {user}! Welcome to {server}." rows="3"></textarea>
-            <small>Use: {user} {user.name} {server} {channel} {args}</small>
-          </div>
-          <div class="form-group">
-            <label>Allowed Roles (hold Ctrl)</label>
-            <select id="cmd-roles" multiple>${roles.map(r => `<option value="${r.id}">${r.name}</option>`).join('')}</select>
-            <small>Leave empty for everyone.</small>
-          </div>
-          <div class="form-group">
-            <label>Embed JSON (optional)</label>
-            <textarea id="cmd-embed" placeholder='{"title":"Hello","description":"World","color":5793266}' rows="2"></textarea>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="createCommand('${guild.id}')">Create Command</button>
+        <nav class="sidebar-nav">
+          ${sidebarItems.map((item, i) => `
+            <a href="#" class="sidebar-link ${i === 0 ? 'active' : ''}" data-page="${item.id}">
+              <span class="sidebar-icon">${item.icon}</span>
+              ${item.label}
+            </a>
+          `).join('')}
+        </nav>
+        <div class="sidebar-footer">
+          <a href="/dashboard" data-link class="sidebar-link">
+            <span class="sidebar-icon">←</span>
+            Back to Servers
+          </a>
         </div>
-
-        <h3 style="margin-bottom:12px;">Existing Commands</h3>
-        ${commands.length === 0
-          ? '<div class="empty"><div class="icon">📭</div><p>No custom commands yet.</p></div>'
-          : `<div class="command-list">${commands.map(c => `
-            <div class="command-item">
-              <div>
-                <div class="cmd-name">${p}${c.name}</div>
-                <div class="cmd-response">${c.response || '[Embed]'}</div>
-                ${c.allowed_roles && JSON.parse(c.allowed_roles).length
-                  ? `<div class="cmd-roles">${JSON.parse(c.allowed_roles).map(rid => {
-                      const r = roles.find(x => x.id === rid);
-                      return `<span class="role-badge">${r ? r.name : rid}</span>`;
-                    }).join('')}</div>`
-                  : '<span class="badge-public">🔓 Everyone</span>'}
-                <div class="cmd-usage">Used ${c.usage_count} times</div>
-              </div>
-              <button class="btn btn-danger btn-sm" onclick="deleteCommand('${guild.id}','${c.name}')">Delete</button>
-            </div>
-          `).join('')}</div>`
-        }
-      </div>
-
-      <!-- Settings -->
-      <div class="tab-content" id="tab-settings">
-        <div class="card" style="max-width:500px;">
-          <h3>Server Settings</h3>
-          <div class="form-group">
-            <label>Command Prefix</label>
-            <input id="s-prefix" value="${settings.prefix || 's'}" maxlength="3">
-          </div>
-          <div class="form-group">
-            <label>Welcome Channel</label>
-            <select id="s-welcome-channel">${makeChannelOptions(channels, settings.welcome_channel)}</select>
-          </div>
-          <div class="form-group">
-            <label>Welcome Message</label>
-            <textarea id="s-welcome-msg" rows="2">${settings.welcome_message || ''}</textarea>
-            <small>{user} {user.name} {server} {count}</small>
-          </div>
-          <div class="form-group">
-            <label>Leave Channel</label>
-            <select id="s-leave-channel">${makeChannelOptions(channels, settings.leave_channel)}</select>
-          </div>
-          <div class="form-group">
-            <label>Leave Message</label>
-            <textarea id="s-leave-msg" rows="2">${settings.leave_message || ''}</textarea>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="saveSettings('${guild.id}')">Save Settings</button>
+      </aside>
+      <main class="dash-content">
+        <div class="dash-page active" id="page-overview">
+          ${renderOverview(guild, settings, commands, autoroles)}
         </div>
-      </div>
-
-      <!-- Leveling -->
-      <div class="tab-content" id="tab-leveling">
-        <div class="card" style="max-width:400px;">
-          <h3>Leveling System</h3>
-          <div class="form-group">
-            <label>Enable Leveling</label>
-            <select id="l-enabled">
-              <option value="true" ${settings.leveling_enabled === 'true' ? 'selected' : ''}>Enabled</option>
-              <option value="false" ${settings.leveling_enabled !== 'true' ? 'selected' : ''}>Disabled</option>
-            </select>
-            <small>When disabled, no XP will be earned from messages.</small>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="saveLeveling('${guild.id}')">Save</button>
+        <div class="dash-page" id="page-commands">
+          ${renderCommandsPage(guild.id, commands, roles, p)}
         </div>
-      </div>
-
-      <!-- Tickets -->
-      <div class="tab-content" id="tab-tickets">
-        <div class="card" style="max-width:500px;">
-          <h3>Ticket Settings</h3>
-          <div class="form-group">
-            <label>Ticket Category</label>
-            <select id="t-category">
-              <option value="">— Disabled —</option>
-              ${categories.map(c => `<option value="${c.id}" ${settings.ticket_category === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Staff Roles</label>
-            <select id="t-staff" multiple>
-              ${roles.map(r => {
-                const staff = JSON.parse(settings.ticket_staff_roles || '[]') || [];
-                return `<option value="${r.id}" ${staff.includes(r.id) ? 'selected' : ''}>${r.name}</option>`;
-              }).join('')}
-            </select>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="saveTickets('${guild.id}')">Save</button>
+        <div class="dash-page" id="page-settings">
+          ${renderSettingsPage(guild.id, settings, channels)}
         </div>
-      </div>
-
-      <!-- Autoroles -->
-      <div class="tab-content" id="tab-autoroles">
-        <div class="card" style="max-width:400px;">
-          <h3>Add Autorole</h3>
-          <div class="form-group">
-            <label>Role to assign on join</label>
-            <select id="ar-role">
-              <option value="">— Select —</option>
-              ${roles.map(r => `<option value="${r.id}">${r.name}</option>`).join('')}
-            </select>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="addAutorole('${guild.id}')">Add</button>
+        <div class="dash-page" id="page-leveling">
+          ${renderLevelingPage(guild.id, settings)}
         </div>
+        <div class="dash-page" id="page-tickets">
+          ${renderTicketsPage(guild.id, settings, roles, categories)}
+        </div>
+        <div class="dash-page" id="page-autoroles">
+          ${renderAutorolesPage(guild.id, autoroles, roles)}
+        </div>
+        <div class="dash-page" id="page-roles">
+          ${renderRolesPage(guild.id, roles)}
+        </div>
+        <div class="dash-page" id="page-moderation">
+          ${renderModerationPage(guild.id)}
+        </div>
+        <div class="dash-page" id="page-leaderboard">
+          ${renderLeaderboardPage(leaderboard)}
+        </div>
+      </main>
+    </div>
+  `;
+}
 
-        ${autoroles.length === 0
-          ? '<div class="empty"><div class="icon">📭</div><p>No autoroles configured.</p></div>'
-          : `<div class="command-list">${autoroles.map(ar => {
-            const r = roles.find(x => x.id === ar.role_id);
-            return `<div class="command-item">
-              <span><strong>${r ? r.name : ar.role_id}</strong></span>
-              <button class="btn btn-danger btn-sm" onclick="deleteAutorole('${guild.id}','${ar.role_id}')">Remove</button>
-            </div>`;
-          }).join('')}</div>`
-        }
-      </div>
-
-      <!-- Leaderboard -->
-      <div class="tab-content" id="tab-leaderboard">
-        <h3 style="margin-bottom:12px;">🏆 Leaderboard</h3>
-        ${leaderboard.length === 0
-          ? '<div class="empty"><div class="icon">📭</div><p>Enable leveling in the Leveling tab first.</p></div>'
-          : `<div class="table-wrap"><table><thead><tr><th>#</th><th>User</th><th>Level</th><th>XP</th></tr></thead>
-            <tbody>${leaderboard.map((e, i) => `<tr>
-              <td><strong>${i+1}</strong></td>
-              <td>${e.user_id}</td>
-              <td>${e.level}</td>
-              <td>${e.xp}</td>
-            </tr>`).join('')}</tbody></table></div>`
-        }
+function renderOverview(guild, settings, commands, autoroles) {
+  return `
+    <div class="page-header">
+      <h1>Overview</h1>
+      <p>Server summary at a glance.</p>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-value">${commands.length}</div><div class="stat-label">Custom Commands</div></div>
+      <div class="stat-card"><div class="stat-value">${autoroles.length}</div><div class="stat-label">Autoroles</div></div>
+      <div class="stat-card"><div class="stat-value">${settings.leveling_enabled === 'true' ? 'On' : 'Off'}</div><div class="stat-label">Leveling</div></div>
+      <div class="stat-card"><div class="stat-value">${settings.ticket_category ? 'On' : 'Off'}</div><div class="stat-label">Tickets</div></div>
+    </div>
+    <div class="card">
+      <h3>Quick Actions</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="switchPage('commands')">Manage Commands</button>
+        <button class="btn btn-primary btn-sm" onclick="switchPage('settings')">Server Settings</button>
+        <button class="btn btn-primary btn-sm" onclick="switchPage('roles')">Manage Roles</button>
+        <button class="btn btn-primary btn-sm" onclick="switchPage('moderation')">View Mod Logs</button>
       </div>
     </div>
+  `;
+}
+
+function renderCommandsPage(guildId, commands, roles, p) {
+  return `
+    <div class="page-header"><h1>Custom Commands</h1><p>Create and manage text and embed commands.</p></div>
+    <div class="card" style="max-width:600px;">
+      <h3>Create Command</h3>
+      <div class="form-group">
+        <label>Command Name (without prefix)</label>
+        <input id="cmd-name" placeholder="hello">
+      </div>
+      <div class="form-group">
+        <label>Response Message</label>
+        <textarea id="cmd-response" placeholder="Hello {user}! Welcome to {server}." rows="3"></textarea>
+        <small>Use: {user} {user.name} {server} {channel} {args}</small>
+      </div>
+      <div class="form-group">
+        <label>Allowed Roles (hold Ctrl)</label>
+        <select id="cmd-roles" multiple>${roles.map(r => `<option value="${r.id}">${r.name}</option>`).join('')}</select>
+        <small>Leave empty for everyone.</small>
+      </div>
+      <div class="form-group">
+        <label>Embed JSON (optional)</label>
+        <textarea id="cmd-embed" placeholder='{"title":"Hello","description":"World","color":5793266}' rows="2"></textarea>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="createCommand('${guildId}')">Create Command</button>
+    </div>
+    <h3 style="margin-bottom:12px;margin-top:24px;">Existing Commands</h3>
+    ${commands.length === 0
+      ? '<div class="empty"><div class="icon">📭</div><p>No custom commands yet.</p></div>'
+      : `<div class="command-list">${commands.map(c => `
+        <div class="command-item">
+          <div>
+            <div class="cmd-name">${p}${c.name}</div>
+            <div class="cmd-response">${c.response || '[Embed]'}</div>
+            ${c.allowed_roles && JSON.parse(c.allowed_roles).length
+              ? `<div class="cmd-roles">${JSON.parse(c.allowed_roles).map(rid => {
+                  const r = roles.find(x => x.id === rid);
+                  return `<span class="role-badge">${r ? r.name : rid}</span>`;
+                }).join('')}</div>`
+              : '<span class="badge-public">🔓 Everyone</span>'}
+            <div class="cmd-usage">Used ${c.usage_count} times</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="deleteCommand('${guildId}','${c.name}')">Delete</button>
+        </div>
+      `).join('')}</div>`
+    }
+  `;
+}
+
+function renderSettingsPage(guildId, settings, channels) {
+  return `
+    <div class="page-header"><h1>Server Settings</h1><p>Prefix, welcome/leave messages.</p></div>
+    <div class="card" style="max-width:500px;">
+      <div class="form-group">
+        <label>Command Prefix</label>
+        <input id="s-prefix" value="${settings.prefix || 's'}" maxlength="3">
+      </div>
+      <div class="form-group">
+        <label>Welcome Channel</label>
+        <select id="s-welcome-channel">${makeChannelOptions(channels, settings.welcome_channel)}</select>
+      </div>
+      <div class="form-group">
+        <label>Welcome Message</label>
+        <textarea id="s-welcome-msg" rows="2">${settings.welcome_message || ''}</textarea>
+        <small>{user} {user.name} {server} {count}</small>
+      </div>
+      <div class="form-group">
+        <label>Leave Channel</label>
+        <select id="s-leave-channel">${makeChannelOptions(channels, settings.leave_channel)}</select>
+      </div>
+      <div class="form-group">
+        <label>Leave Message</label>
+        <textarea id="s-leave-msg" rows="2">${settings.leave_message || ''}</textarea>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveSettings('${guildId}')">Save Settings</button>
+    </div>
+  `;
+}
+
+function renderLevelingPage(guildId, settings) {
+  return `
+    <div class="page-header"><h1>Leveling</h1><p>Enable or disable XP gain from messages.</p></div>
+    <div class="card" style="max-width:400px;">
+      <div class="form-group">
+        <label>Enable Leveling</label>
+        <select id="l-enabled">
+          <option value="true" ${settings.leveling_enabled === 'true' ? 'selected' : ''}>Enabled</option>
+          <option value="false" ${settings.leveling_enabled !== 'true' ? 'selected' : ''}>Disabled</option>
+        </select>
+        <small>When disabled, no XP will be earned from messages.</small>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveLeveling('${guildId}')">Save</button>
+    </div>
+  `;
+}
+
+function renderTicketsPage(guildId, settings, roles, categories) {
+  return `
+    <div class="page-header"><h1>Tickets</h1><p>Configure the ticket system. Use \`sticketsetup\` in your server to post the ticket panel.</p></div>
+    <div class="card" style="max-width:500px;">
+      <div class="form-group">
+        <label>Ticket Category</label>
+        <select id="t-category">
+          <option value="">— Disabled —</option>
+          ${categories.map(c => `<option value="${c.id}" ${settings.ticket_category === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Staff Roles</label>
+        <select id="t-staff" multiple>
+          ${roles.map(r => {
+            const staff = JSON.parse(settings.ticket_staff_roles || '[]') || [];
+            return `<option value="${r.id}" ${staff.includes(r.id) ? 'selected' : ''}>${r.name}</option>`;
+          }).join('')}
+        </select>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveTickets('${guildId}')">Save</button>
+    </div>
+  `;
+}
+
+function renderAutorolesPage(guildId, autoroles, roles) {
+  return `
+    <div class="page-header"><h1>Autoroles</h1><p>Automatically assign roles when someone joins.</p></div>
+    <div class="card" style="max-width:400px;">
+      <h3>Add Autorole</h3>
+      <div class="form-group">
+        <label>Role to assign on join</label>
+        <select id="ar-role">
+          <option value="">— Select —</option>
+          ${roles.map(r => `<option value="${r.id}">${r.name}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="addAutorole('${guildId}')">Add</button>
+    </div>
+    ${autoroles.length === 0
+      ? '<div class="empty"><div class="icon">📭</div><p>No autoroles configured.</p></div>'
+      : `<div class="command-list" style="margin-top:16px;">${autoroles.map(ar => {
+          const r = roles.find(x => x.id === ar.role_id);
+          return `<div class="command-item">
+            <span><strong>${r ? r.name : ar.role_id}</strong></span>
+            <button class="btn btn-danger btn-sm" onclick="deleteAutorole('${guildId}','${ar.role_id}')">Remove</button>
+          </div>`;
+        }).join('')}</div>`
+    }
+  `;
+}
+
+function renderRolesPage(guildId, roles) {
+  return `
+    <div class="page-header"><h1>Role Management</h1><p>Create, rename, delete, or change role colors.</p></div>
+    <div class="card" style="max-width:500px;">
+      <h3>Create Role</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Name</label>
+          <input id="rl-name" placeholder="New Role">
+        </div>
+        <div class="form-group">
+          <label>Color (hex)</label>
+          <input id="rl-color" placeholder="#5865F2" value="#5865F2">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="createRole('${guildId}')">Create Role</button>
+    </div>
+    <h3 style="margin-bottom:12px;margin-top:24px;">Existing Roles</h3>
+    <div class="command-list">
+      ${roles.filter(r => r.id !== guildId).map(r => `
+        <div class="command-item">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${r.color || '#999'};"></span>
+            <strong>${r.name}</strong>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="renameRole('${guildId}','${r.id}','${r.name.replace(/'/g, "\\'")}')">Rename</button>
+            <button class="btn btn-ghost btn-sm" onclick="recolorRole('${guildId}','${r.id}','${r.color || '#5865F2'}')">Color</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteRole('${guildId}','${r.id}','${r.name.replace(/'/g, "\\'")}')">Delete</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderModerationPage(guildId) {
+  return `
+    <div class="page-header"><h1>Moderation Logs</h1><p>View recent moderation cases. Warns, mutes, kicks, bans.</p></div>
+    <div class="card" style="max-width:500px;">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Filter by User ID</label>
+          <input id="mod-userid" placeholder="Leave empty for all">
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="mod-type">
+            <option value="">All types</option>
+            <option value="warn">Warns</option>
+            <option value="mute">Mutes</option>
+            <option value="kick">Kicks</option>
+            <option value="ban">Bans</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="loadCases('${guildId}')">Load Cases</button>
+    </div>
+    <div id="mod-results"><div class="empty"><div class="icon">🔍</div><p>Click "Load Cases" to view moderation logs.</p></div></div>
+  `;
+}
+
+function renderLeaderboardPage(leaderboard) {
+  return `
+    <div class="page-header"><h1>Leaderboard</h1><p>Top members by XP and level.</p></div>
+    ${leaderboard.length === 0
+      ? '<div class="empty"><div class="icon">📭</div><p>Enable leveling in the Leveling tab first.</p></div>'
+      : `<div class="table-wrap"><table><thead><tr><th>#</th><th>User</th><th>Level</th><th>XP</th></tr></thead>
+        <tbody>${leaderboard.map((e, i) => `<tr>
+          <td><strong>${i+1}</strong></td>
+          <td>${e.user_id}</td>
+          <td>${e.level}</td>
+          <td>${e.xp}</td>
+        </tr>`).join('')}</tbody></table></div>`
+    }
   `;
 }
 
@@ -368,6 +518,24 @@ function makeChannelOptions(channels, selected) {
     `<option value="${c.id}" ${c.id === selected ? 'selected' : ''}>${c.name}</option>`
   ).join('');
 }
+
+// ========== SIDEBAR ==========
+function switchPage(pageId) {
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  document.querySelectorAll('.dash-page').forEach(p => p.classList.remove('active'));
+  const link = document.querySelector(`.sidebar-link[data-page="${pageId}"]`);
+  if (link) link.classList.add('active');
+  const page = document.getElementById(`page-${pageId}`);
+  if (page) page.classList.add('active');
+}
+
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('.sidebar-link[data-page]');
+  if (link) {
+    e.preventDefault();
+    switchPage(link.dataset.page);
+  }
+});
 
 // ========== ACTIONS ==========
 
@@ -432,16 +600,80 @@ async function deleteAutorole(guildId, roleId) {
   Router.navigate(`/dashboard/${guildId}`);
 }
 
-// ========== TABS ==========
-document.addEventListener('click', (e) => {
-  const tab = e.target.closest('.tab-btn');
-  if (!tab) return;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  tab.classList.add('active');
-  const el = document.getElementById('tab-' + tab.dataset.tab);
-  if (el) el.classList.add('active');
-});
+// ========== ROLE ACTIONS ==========
+
+async function createRole(guildId) {
+  const name = document.getElementById('rl-name').value.trim();
+  const color = document.getElementById('rl-color').value.trim();
+  if (!name) return toast('Role name is required.');
+  await API.post(`/api/guild/${guildId}/roles`, { name, color });
+  toast('Role created!');
+  Router.navigate(`/dashboard/${guildId}`);
+}
+
+async function deleteRole(guildId, roleId, name) {
+  if (!confirm(`Delete role "${name}"?`)) return;
+  await API.del(`/api/guild/${guildId}/roles/${roleId}`);
+  toast('Role deleted!');
+  Router.navigate(`/dashboard/${guildId}`);
+}
+
+async function renameRole(guildId, roleId, currentName) {
+  const newName = prompt('New name:', currentName);
+  if (!newName || newName === currentName) return;
+  await API.patch(`/api/guild/${guildId}/roles/${roleId}`, { name: newName });
+  toast('Role renamed!');
+  Router.navigate(`/dashboard/${guildId}`);
+}
+
+async function recolorRole(guildId, roleId, currentColor) {
+  const newColor = prompt('New hex color (e.g. #FF0000):', currentColor);
+  if (!newColor || newColor === currentColor) return;
+  await API.patch(`/api/guild/${guildId}/roles/${roleId}`, { color: newColor });
+  toast('Role color changed!');
+  Router.navigate(`/dashboard/${guildId}`);
+}
+
+// ========== MODERATION ACTIONS ==========
+
+async function loadCases(guildId) {
+  const userId = document.getElementById('mod-userid').value.trim();
+  const type = document.getElementById('mod-type').value;
+  const params = new URLSearchParams();
+  if (userId) params.set('userId', userId);
+  if (type) params.set('type', type);
+  const qs = params.toString();
+  const cases = await API.get(`/api/guild/${guildId}/cases${qs ? '?' + qs : ''}`);
+  const el = document.getElementById('mod-results');
+  if (!cases || cases.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="icon">📭</div><p>No cases found.</p></div>';
+    return;
+  }
+  el.innerHTML = `
+    <div class="table-wrap" style="margin-top:16px;">
+      <table>
+        <thead><tr><th>#</th><th>User</th><th>Type</th><th>Reason</th><th>Moderator</th><th>Action</th></tr></thead>
+        <tbody>
+          ${cases.map(c => `<tr>
+            <td>${c.id}</td>
+            <td>${c.user_tag}</td>
+            <td><span class="badge-type badge-${c.type}">${c.type}</span></td>
+            <td>${c.reason}</td>
+            <td>${c.moderator_tag}</td>
+            <td>${c.type === 'warn' ? `<button class="btn btn-danger btn-sm" onclick="clearWarnCases('${guildId}','${c.user_id}')">Clear Warns</button>` : ''}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function clearWarnCases(guildId, userId) {
+  if (!confirm('Clear all warns for this user?')) return;
+  await API.del(`/api/guild/${guildId}/cases/${userId}/warn`);
+  toast('Warns cleared!');
+  loadCases(guildId);
+}
 
 // ========== INIT ==========
 Router.route('/', renderHome);

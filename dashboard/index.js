@@ -159,6 +159,76 @@ app.delete('/api/guild/:guildId/autoroles/:roleId', isAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// API: role management
+app.post('/api/guild/:guildId/roles', isAuth, (req, res) => {
+  const client = getClient();
+  const guild = client?.guilds.cache.get(req.params.guildId);
+  if (!guild) return res.status(404).json({ error: 'Guild not found' });
+  const { name, color } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name is required' });
+  guild.roles.create({ name, color: color ? color.replace('#', '') : undefined, reason: `Created via dashboard by ${req.user.tag}` })
+    .then((role) => res.json({ success: true, role: { id: role.id, name: role.name, color: role.hexColor } }))
+    .catch((err) => res.status(500).json({ error: err.message }));
+});
+
+app.patch('/api/guild/:guildId/roles/:roleId', isAuth, (req, res) => {
+  const client = getClient();
+  const guild = client?.guilds.cache.get(req.params.guildId);
+  if (!guild) return res.status(404).json({ error: 'Guild not found' });
+  const role = guild.roles.cache.get(req.params.roleId);
+  if (!role) return res.status(404).json({ error: 'Role not found' });
+  const updates = {};
+  if (req.body.name) updates.name = req.body.name;
+  if (req.body.color) updates.color = req.body.color.replace('#', '');
+  role.set(updates, `Updated via dashboard by ${req.user.tag}`)
+    .then(() => res.json({ success: true }))
+    .catch((err) => res.status(500).json({ error: err.message }));
+});
+
+app.delete('/api/guild/:guildId/roles/:roleId', isAuth, (req, res) => {
+  const client = getClient();
+  const guild = client?.guilds.cache.get(req.params.guildId);
+  if (!guild) return res.status(404).json({ error: 'Guild not found' });
+  const role = guild.roles.cache.get(req.params.roleId);
+  if (!role) return res.status(404).json({ error: 'Role not found' });
+  role.delete(`Deleted via dashboard by ${req.user.tag}`)
+    .then(() => res.json({ success: true }))
+    .catch((err) => res.status(500).json({ error: err.message }));
+});
+
+// API: get moderation cases
+app.get('/api/guild/:guildId/cases', isAuth, (req, res) => {
+  const { getCases, getCasesByType } = require('../database');
+  const guildId = req.params.guildId;
+  const userId = req.query.userId || null;
+  const type = req.query.type || null;
+  let cases;
+  if (userId && type) {
+    cases = getCasesByType(guildId, userId, type);
+  } else if (userId) {
+    cases = getCases(guildId, userId);
+  } else {
+    cases = getCases(guildId);
+  }
+  const client = getClient();
+  const enriched = cases.slice(0, 30).map((c) => {
+    const target = client?.users.cache.get(c.user_id);
+    const mod = client?.users.cache.get(c.moderator_id);
+    return {
+      ...c,
+      user_tag: target ? target.tag : c.user_id,
+      moderator_tag: mod ? mod.tag : c.moderator_id,
+    };
+  });
+  res.json(enriched);
+});
+
+app.delete('/api/guild/:guildId/cases/:userId/:type', isAuth, (req, res) => {
+  const { clearCases } = require('../database');
+  clearCases(req.params.guildId, req.params.userId, req.params.type);
+  res.json({ success: true });
+});
+
 // Serve the SPA - all unmatched routes go to index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
